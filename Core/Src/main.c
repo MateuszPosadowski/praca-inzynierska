@@ -68,7 +68,11 @@ int Seconds;
 int Date;
 int Month;
 int Year;
+int init_time=0;
 
+extern uint8_t HoursAdd;
+extern uint8_t MinutesAdd;
+extern uint8_t SecondAdd;
 
 /* USER CODE END PV */
 
@@ -86,14 +90,9 @@ static void MX_ADC2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/*
-void alarm(void)
-{
-	  RTC_AlarmTypeDef gAlarm;
-	  gAlarm.AlarmTime.Hours   = HoursAlarm;;
-	  gAlarm.AlarmTime.Minutes = MinutesAlarm;;
-}
-*/
+
+
+
 void get_time(void)
 {
   RTC_DateTypeDef gDate;
@@ -115,8 +114,29 @@ void get_time(void)
   Month = gDate.Month;
   Year = 2000 + gDate.Year;
 }
+/*
+
+void update_time(int hours,int minutes)
+{
+	  RTC_TimeTypeDef gTime;
+	  //HAL_StatusTypeDef HAL_RTC_SetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, uint32_t Format)
+
+	  // Get the RTC current Time
+	  HAL_RTC_SetTime(&hrtc, &gTime, RTC_FORMAT_BIN);
 
 
+	  // Display time Format: hh:mm:ss
+	  sprintf((char*)time,"%02d:%02d:%02d",gTime.Hours, gTime.Minutes, gTime.Seconds);
+	  Hours = gTime.Hours;
+	  Minutes = gTime.Minutes;
+	  Seconds = gTime.Seconds;
+	  // Display date Format: mm-dd-yy
+	  sprintf((char*)date,"%02d-%02d-%2d",gDate.Date, gDate.Month, 2000 + gDate.Year);  // I like the date first
+	  Date = gDate.Date;
+	  Month = gDate.Month;
+	  Year = 2000 + gDate.Year;
+}
+*/
 
 uint16_t ADC_Get_Value (void)
 {
@@ -293,7 +313,11 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-
+	  if(init_time==1)
+	  {
+		  MX_RTC_Init();
+		  init_time=0;
+	  }
 	  	  get_time();
 	  	  HAL_Delay(500);
 
@@ -509,9 +533,10 @@ static void MX_RTC_Init(void)
 
   /** Initialize RTC and set the Time and Date
   */
-  sTime.Hours = 0x10;
-  sTime.Minutes = 0x20;
-  sTime.Seconds = 0x30;
+
+  sTime.Hours = HoursAdd;
+  sTime.Minutes = MinutesAdd;
+  sTime.Seconds = SecondAdd;
 
   if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
   {

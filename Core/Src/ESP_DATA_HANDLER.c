@@ -41,12 +41,16 @@ extern float temper;
 extern float Lux;
 extern int check;
 int buzz = 0;
-
+extern int init_time;
 extern int Hours;
 extern int Minutes;
+extern int Seconds;
 
-int HoursAdd=0;
-int MinutesAdd=0;
+extern void MX_RTC_Init(void);
+
+uint8_t HoursAdd=0;
+uint8_t MinutesAdd=0;
+uint8_t SecondAdd=0;
 int HoursAlarm=0;
 int MinutesAlarm=0;
 
@@ -102,6 +106,9 @@ char *set_time = "<!DOCTYPE html>\n\
 		<label for=\"minutes\">Minutes:</label><br>\n\
 		<input type=\"number\" id=\"minutes\" name=\"minutes\" value=\"\"><br><br>\n\
 		<input type=\"submit\" value=\"Submit\">\n\
+		</form><br><br>\n\
+		<form action=\"/home\">\n\
+		<input type=\"submit\" value=\"Return\">\n\
 		</form>\n\
 		</body></html>";
 
@@ -110,7 +117,7 @@ char *set_alarm = "<!DOCTYPE html>\n\
 		<body>\n\
 		<h1>ESP8266 Smart Home Driver</h1>\n\
 		<p>Set the time below: </p>\n\
-		<form action=\"/time_change\">\n\
+		<form action=\"/alarm_change\">\n\
 		<label for=\"hour\">Hour:</label><br>\n\
 		<input type=\"number\" id=\"hour\" name=\"hour\" value=\"\"><br><br>\n\
 		<label for=\"minutes\">Minutes:</label><br>\n\
@@ -155,11 +162,10 @@ char *time_change = "<!DOCTYPE html>\n\
 		<p> Click Below to Return </p>\n\
 		<form action=\"/home\">\n\
 		<input type=\"submit\" value=\"Return\">\n\
-		</form><br><br>\n\
-		<form action=\"/page2\">\n\
-		<input type=\"submit\" value=\"View Data\">\n\
 		</form>\n\
 		</body></html>";
+
+
 
 char *led_on = "<!DOCTYPE html>\n\
 		<html>\n\
@@ -205,10 +211,13 @@ char *page2_end = "<p> Click Below to Submit again </p>\n\
 char *time_end = "<p> Click Below to Submit again </p>\n\
 		<form action=\"/set_time\">\n\
 		<input type=\"submit\" value=\"Set Time\">\n\
+		</form><br><br>\n\
 		<form action=\"/set_alarm\">\n\
 		<input type=\"submit\" value=\"Set Alarm\">\n\
+		</form><br><br>\n\
 		<form action=\"/home\">\n\
-		<input type=\"submit\" value=\"Submit again\">\n\
+		<input type=\"submit\" value=\"Return\">\n\
+		</form><br><br>\n\
 		</body></html>";
 
 char* temperature_Top = "<!DOCTYPE html>\n\
@@ -325,22 +334,12 @@ void Server_Handle (char *str, int Link_ID)
 	char datatosend[4096] = {0};
 	if (!(strcmp (str, "/page1")))
 	{
+
 		sprintf(datatosend, page1);
 		Server_Send(datatosend, Link_ID);
 	}
 
-	if (!(strcmp (str, "/set_time")))
-	{
-		sprintf(datatosend, set_time);
-		Server_Send(datatosend, Link_ID);
-	}
-	/*
-	if (!(strcmp (str, "/set_alarm")))
-	{
-		sprintf(datatosend, set_time);
-		Server_Send(datatosend, Link_ID);
-	}
-	*/
+
 	else if (!(strcmp (str, "/page2")))
 	{
 		char localbuf[2048];
@@ -357,18 +356,31 @@ void Server_Handle (char *str, int Link_ID)
 		Server_Send(datatosend, Link_ID);
 	}
 
+	else if (!(strcmp (str, "/set_time")))
+	{
+		sprintf(datatosend, set_time);
+		Server_Send(datatosend, Link_ID);
+	}
+
+	else if (!(strcmp (str, "/set_alarm")))
+	{
+		sprintf(datatosend, set_time);
+		Server_Send(datatosend, Link_ID);
+	}
+
+
 	else if (!(strcmp (str, "/time_change")))
 	{
 		sprintf(datatosend, time_change);
 		Server_Send(datatosend, Link_ID);
 	}
-/*
+
 	else if (!(strcmp (str, "/alarm_change")))
 	{
 		sprintf(datatosend, alarm_change);
 		Server_Send(datatosend, Link_ID);
 	}
-*/
+
 	else if (!(strcmp (str, "/temper")))
 	{
 
@@ -395,7 +407,7 @@ void Server_Handle (char *str, int Link_ID)
 		int bufsize = (sizeofuser (user));
 		for (int i=0; i<bufsize; i++)
 		{
-			sprintf (localbuf, "<tr><td>%i : %i</td></tr>",Hours+HoursAdd,Minutes+MinutesAdd);
+			sprintf (localbuf, "<tr><td>%i:%i:%i</td></tr>",Hours,Minutes,Seconds);
 			strcat (datatosend, localbuf);
 		}
 		strcat (datatosend, "</table>");
@@ -423,9 +435,7 @@ void Server_Handle (char *str, int Link_ID)
 	else if (!(strcmp (str, "/led")))
 	{
 
-		char localbuf[2048];
 		sprintf(datatosend, led);
-		int bufsize = (sizeofuser (user));
 		strcat(datatosend, page2_end);
 		Server_Send(datatosend, Link_ID);
 	}
@@ -454,25 +464,28 @@ void Server_Start (void)
 		usernumber++;
 		if (usernumber >9) usernumber = 0;
 		Server_Handle("/page1",Link_ID);
+		HAL_Delay(500);
 	}
 
 	else if (Look_for("/time_change", buftostoreheader) == 1)
 	{
 
-		GetDataFromBuffer("minutes=", "HTTP", buftostoreheader, user[usernumber].minutes);
-		MinutesAdd = atoi(user[usernumber].minutes) - Minutes;
 		GetDataFromBuffer("hour=", " HTTP", buftostoreheader, user[usernumber].hour);
-		HoursAdd = atoi(user[usernumber].hour) - Hours;
+		HoursAdd = atoi(user[usernumber].hour);
+		GetDataFromBuffer("minutes=", "HTTP", buftostoreheader, user[usernumber].minutes);
+		MinutesAdd = atoi(user[usernumber].minutes);
 		usernumber++;
 		if (usernumber >9) usernumber = 0;
+		init_time = 1;
 		Server_Handle("/time_change",Link_ID);
+		HAL_Delay(500);
 	}
 
-	/*
+
 	 else if (Look_for("/alarm_change", buftostoreheader) == 1)
 	{
 
-		GetDataFromBuffer("minutes=", "&", buftostoreheader, user[usernumber].minutes);
+		GetDataFromBuffer("minutes=", " HTTP", buftostoreheader, user[usernumber].minutes);
 		MinutesAlarm = atoi(user[usernumber].minutes);
 		GetDataFromBuffer("hour=", " HTTP", buftostoreheader, user[usernumber].hour);
 		HoursAlarm = atoi(user[usernumber].hour);
@@ -480,25 +493,30 @@ void Server_Start (void)
 		if (usernumber >9) usernumber = 0;
 		buzz = 1;
 		Server_Handle("/alarm_change",Link_ID);
+		HAL_Delay(500);
 	}
-	*/
+
 
 	else if (Look_for("/page2", buftostoreheader) == 1)
 	{
 		Server_Handle("/page2",Link_ID);
+		HAL_Delay(500);
 	}
 
 	else if (Look_for("/temper", buftostoreheader) == 1)
 	{
 		Server_Handle("/temper",Link_ID);
+		HAL_Delay(500);
 	}
 	else if (Look_for("/lux", buftostoreheader) == 1)
 	{
 		Server_Handle("/lux",Link_ID);
+		HAL_Delay(500);
 	}
 	else if (Look_for("/time", buftostoreheader) == 1)
 	{
 		Server_Handle("/time",Link_ID);
+		HAL_Delay(500);
 	}
 
 	else if (Look_for("/led", buftostoreheader) == 1)
@@ -515,21 +533,25 @@ void Server_Start (void)
 				}
 
 			Server_Handle("/led",Link_ID);
+			HAL_Delay(500);
 
 		}
 	else if (Look_for("/set_time", buftostoreheader) == 1)
 	{
 		Server_Handle("/set_time",Link_ID);
+		HAL_Delay(500);
 	}
-	/*
+
 	else if (Look_for("/set_alarm", buftostoreheader) == 1)
 	{
 		Server_Handle("/set_alarm",Link_ID);
+		HAL_Delay(500);
 	}
-	*/
+
 	else if (Look_for("/home", buftostoreheader) == 1)
 	{
 		Server_Handle("/home",Link_ID);
+		HAL_Delay(500);
 	}
 
 	else if (Look_for("/favicon.ico", buftostoreheader) == 1);
@@ -537,6 +559,7 @@ void Server_Start (void)
 	else
 	{
 		Server_Handle("/ ", Link_ID);
+		HAL_Delay(500);
 	}
 }
 
