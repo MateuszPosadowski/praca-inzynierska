@@ -39,20 +39,22 @@ extern char time;
 extern char date;
 extern float temper;
 extern float Lux;
-extern int check;
+extern uint8_t check;
 int buzz = 0;
-extern int init_time;
+extern uint8_t init_time;
+extern uint8_t init_date;
 extern int Hours;
 extern int Minutes;
 extern int Seconds;
-
-extern void MX_RTC_Init(void);
-
-uint8_t HoursAdd=0;
-uint8_t MinutesAdd=0;
-uint8_t SecondAdd=0;
-int HoursAlarm=0;
-int MinutesAlarm=0;
+extern int Date;
+extern int Month;
+extern int Year;
+int HoursAdd=13;
+int MinutesAdd=35;
+int SecondAdd=0;
+uint8_t HoursAlarm=0;
+uint8_t MinutesAlarm=0;
+uint8_t SecondAlarm=0;
 
 int sizeofuser (userDetails *user)
 {
@@ -105,6 +107,8 @@ char *set_time = "<!DOCTYPE html>\n\
 		<input type=\"number\" id=\"hour\" name=\"hour\" value=\"\"><br><br>\n\
 		<label for=\"minutes\">Minutes:</label><br>\n\
 		<input type=\"number\" id=\"minutes\" name=\"minutes\" value=\"\"><br><br>\n\
+		<label for=\"seconds\">Seconds:</label><br>\n\\
+		<input type=\"number\" id=\"seconds\" name=\"seconds\" value=\"\"><br><br>\n\
 		<input type=\"submit\" value=\"Submit\">\n\
 		</form><br><br>\n\
 		<form action=\"/home\">\n\
@@ -260,7 +264,7 @@ char *table_time = "<style>table {  font-family: arial, sans-serif;\
 		border-collapse: collapse;  width: 50%;}\
 		td, th {  border: 1px solid #dddddd;\
 		text-align: left;  padding: 8px;}tr:nth-child(even)\
-		{  background-color: #dddddd;}</style><table><tr><th>Time</th><th>Date</th></tr>";
+		{  background-color: #dddddd;}</style><table><tr><th>Time</th></tr>";
 
 /*****************************************************************************************************************************************/
 
@@ -364,7 +368,7 @@ void Server_Handle (char *str, int Link_ID)
 
 	else if (!(strcmp (str, "/set_alarm")))
 	{
-		sprintf(datatosend, set_time);
+		sprintf(datatosend, set_alarm);
 		Server_Send(datatosend, Link_ID);
 	}
 
@@ -474,13 +478,14 @@ void Server_Start (void)
 		HoursAdd = atoi(user[usernumber].hour);
 		GetDataFromBuffer("minutes=", "HTTP", buftostoreheader, user[usernumber].minutes);
 		MinutesAdd = atoi(user[usernumber].minutes);
+		GetDataFromBuffer("seconds=", "HTTP", buftostoreheader, user[usernumber].seconds);
+		SecondAdd = atoi(user[usernumber].seconds);
 		usernumber++;
 		if (usernumber >9) usernumber = 0;
 		init_time = 1;
 		Server_Handle("/time_change",Link_ID);
 		HAL_Delay(500);
 	}
-
 
 	 else if (Look_for("/alarm_change", buftostoreheader) == 1)
 	{

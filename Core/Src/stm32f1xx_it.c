@@ -53,6 +53,7 @@
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 extern void Uart_isr (UART_HandleTypeDef *huart);
+extern int check;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -236,7 +237,8 @@ void RTC_Alarm_IRQHandler(void)
   /* USER CODE END RTC_Alarm_IRQn 0 */
   HAL_RTC_AlarmIRQHandler(&hrtc);
   /* USER CODE BEGIN RTC_Alarm_IRQn 1 */
-
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, 1);
+  check=1;
   /* USER CODE END RTC_Alarm_IRQn 1 */
 }
 

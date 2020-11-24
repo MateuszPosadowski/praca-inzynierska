@@ -32,6 +32,9 @@ typedef struct
 	char hour[2];
 	char minutes[2];
 	char seconds[2];
+	char date[2];
+	char month[2];
+	char year[4];
 }userDetails;
 
 
